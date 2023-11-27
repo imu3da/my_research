@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "my-research"
+version = "0.1.0"
+description = ""
+authors = ["yuki <imu3da@outlook.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "^1.28.2"
+openai = "^1.3.5"
+scikit-learn = "^1.3.2"
+boto3 = "^1.29.7"
+plotly = "^5.18.0"
+python-dotenv = "^1.0.0"
+pypdf2 = "^3.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
