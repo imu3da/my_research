@@ -63,7 +63,8 @@ def write_to_dynamodb(dynamodb, df, table_name):
     table = dynamodb.Table(table_name)
     # DataFrame内の数値をDynamoDBが対応している型に変換
     df = df.replace(np.nan, 0)
-    df = df.applymap(lambda x: Decimal(x) if isinstance(x, (int, float)) else x)
+    for column in df.columns:
+        df[column] = df[column].map(lambda x: Decimal(x) if isinstance(x, (int, float)) else x)
     for i in range(len(df)):
         item = df.iloc[i].to_dict()
         table.put_item(Item=item)
@@ -81,7 +82,7 @@ def get_embedding(client, text, model='text-embedding-ada-002'):
    return np.array(response.data[0].embedding)
 
 # 最近傍探索
-def nearest_neighbor_search(client, query, df, partition_key_name):
+def nearest_neighbor_search(client, query, answer_num, df, partition_key_name):
     query_embedded = get_embedding(client, query)
     df_name = df[[partition_key_name, 'name_embedded']].dropna()
     df_description = df[[partition_key_name, 'description_embedded']].dropna()
@@ -96,12 +97,12 @@ def nearest_neighbor_search(client, query, df, partition_key_name):
         similarities_and_ids.append((similarity, row[partition_key_name]))
     # 類似度でソート
     similarities_and_ids.sort(reverse=True)
-    # 上位2つの異なるIDを持つデータを取り出す
+    # 上位3つの異なるIDを持つデータを取り出す
     top_ids = []
     for similarity, id in similarities_and_ids:
         if id not in top_ids:
             top_ids.append(id)
-            if len(top_ids) == 2:
+            if len(top_ids) == answer_num:
                 break
     # IDに基づいてデータフレームを取得
     top_df = df[df[partition_key_name].isin(top_ids)]
@@ -179,8 +180,8 @@ def df_to_markdown(df):
 # その他
 # -------------------------
 # 質問文をもとにAIに追加する適切な情報を文字列で返す関数
-def get_knowledge(client, query, df, partition_key_name='id'):
-    df = nearest_neighbor_search(client, query, df, partition_key_name)
+def get_knowledge(client, query, answer_num, df, partition_key_name='id'):
+    df = nearest_neighbor_search(client, query, answer_num, df, partition_key_name)
     knowledge = df_to_markdown(df)
     return knowledge
 
@@ -234,14 +235,14 @@ def deco():
 def reload():
     st.cache_resource.clear()
     st.session_state.clear()
-    st.experimental_rerun()
+    st.rerun()
 
 # ボタン状態を含めて全てを更新する関数
 def all_reload(button_state):
     st.cache_resource.clear()
     st.session_state.clear()
     st.session_state[button_state] = False
-    st.experimental_rerun()
+    st.rerun()
 
 # ボタンのセッションステートの初期化を行う関数
 def init_session(button_state, button_label):

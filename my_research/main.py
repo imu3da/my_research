@@ -3,7 +3,7 @@
 # -------------------------
 import boto3, json, os, re
 # from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 from sklearn.decomposition import PCA
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ client, dynamodb = mf.launch_client()
 # 各種変数の設定
 models = ['gpt-3.5-turbo-1106']
 site_name = '仮名'
-pages = ['❗️**AIアドバイザー** 💬', '学習データの確認・編集 🧐', '投稿文の自動生成 🤖']
+pages = ['❗️**AIアドバイザー** 💬', '学習データの確認・変更 🧐', '投稿文の自動生成 🤖']
 forget_input = '全ての必須項目を入力してください。'
 system_content = os.environ.get('AI_RULE')
 table_name = os.environ.get('KNOWLEDGE_TABLE')
@@ -87,13 +87,17 @@ api_key_input = st.sidebar.text_input(
 )
 if api_key_input:
     client = OpenAI(api_key = api_key_input)
+answer_num = st.sidebar.slider('単位知識数', 1, 5, 3, help='これは一度にAIが利用する知識の数です。高いほど知識が豊かになりますが、別の知識と混ざり、応答内容が不正確になる可能性が上がります。')
+st.session_state['answer_num'] = answer_num
+history_num = st.sidebar.slider('記憶クエリ数', 1, 10, 3, help='これはAIアドバイザーとの会話での、AIが空気を読む精度のようなものです。高いほど会話全体の流れを考慮しますが、発言1回あたりの重要性が下がり、クリティカルな返答が難しくなります。')
+st.session_state['history_num'] = history_num
 st.sidebar.write('''
 ---
 # <span style='color: silver; '>説明</span>
 ## <span style='color: gray; '>💬 AIアドバイザー</span>
 AI観光アドバイザーと会話ができます。
-## <span style='color: gray; '>🧐 学習データの確認・編集</span>
-AIに与えている知識のデータを確認・編集できます。
+## <span style='color: gray; '>🧐 学習データの確認・変更</span>
+AIに与えている知識のデータを確認または変更できます。
 ## <span style='color: gray; '>🤖 投稿文の自動生成</span>
 SNSやHPに掲載する文章を自動生成できます。
 ''', unsafe_allow_html=True)
@@ -139,49 +143,55 @@ if page == pages[0]:
                     st.link_button(title, url)
     # ユーザーからの新しい入力を取得
     if prompt := st.chat_input('お話ししましょう。'):
-        # 直近5つのユーザーメッセージを取得
-        recent_user_messages = [message['content'] for message in st.session_state.messages[-3:] if message['role'] == 'user' and message['content'].strip() != '']
+        # 直近のユーザーメッセージを取得
+        recent_user_messages = [message['content'] for message in st.session_state.messages[-1*st.session_state['history_num']:] if message['role'] == 'user' and message['content'].strip() != '']
         # それらのメッセージを一つのテキストに結合
         combined_prompt = ' '.join(recent_user_messages)
         # 結合したテキストをベクトル化して知識を取得
         if combined_prompt.strip() != '':
-            knowledge = mf.get_knowledge(client, combined_prompt, df)
+            knowledge = mf.get_knowledge(client, combined_prompt, st.session_state['answer_num'], df)
         else:
-            knowledge = mf.get_knowledge(client, prompt, df)
+            knowledge = mf.get_knowledge(client, prompt, st.session_state['answer_num'], df)
         prompt_user = prompt
         prompt_api = prompt
-        prompt_api += '\n---\nなお以下は上記に関連しているかもしれない情報です。良ければ回答の参考にしてください。\n' + knowledge
+        prompt_api += '\n---\nなお以下は上記に関連しているかもしれない情報です。良ければ回答の参考にしてください。関連している場合は、リンクを回答に含めてくれると嬉しいです。\n' + knowledge
         # ユーザーへの表示用メッセージを更新
         st.session_state.messages.append({'role': 'user', 'content': prompt_user})
         # API用メッセージを更新
         if 'messages_api' not in st.session_state:
             st.session_state.messages_api = [{'role': 'system', 'content': system_content}]
         st.session_state.messages_api.append({'role': 'user', 'content': prompt_api})
+        if len(st.session_state.messages_api) > 5:
+            st.session_state.messages_api.pop(0)
         with st.chat_message('user'):
             st.markdown(prompt_user)
         full_response = ''
         with st.chat_message('assistant'):
             with st.spinner('AIが応答を生成中です……'):
                 message_placeholder = st.empty() # 一時的なプレースホルダーを作成
-                # ChatGPTからのストリーミング応答を処理
-                for response in client.chat.completions.create(
-                    model=st.session_state['model'],
-                    messages=[
-                        {'role': m['role'], 'content': m['content']}
-                        for m in st.session_state.messages_api
-                    ],
-                    stream=True):
-                    full_response += response.choices[0].delta.content or ''
-                    message_placeholder.markdown(full_response + '▌') # レスポンスの途中結果を表示
-                message_placeholder.markdown(full_response) # 最終レスポンスを表示
-                # メッセージからマークダウンリンクを抽出
-                markdown_links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', full_response)
-                # 抽出したマークダウンリンクをリンクボタンとして表示
-                for title, url in markdown_links:
-                    st.link_button(title, url)
+                try:
+                    # ChatGPTからのストリーミング応答を処理
+                    for response in client.chat.completions.create(
+                        model=st.session_state['model'],
+                        messages=[
+                            {'role': m['role'], 'content': m['content']}
+                            for m in st.session_state.messages_api
+                        ],
+                        stream=True):
+                        full_response += response.choices[0].delta.content or ''
+                        message_placeholder.markdown(full_response + '▌') # レスポンスの途中結果を表示
+                    message_placeholder.markdown(full_response) # 最終レスポンスを表示
+                    # メッセージからマークダウンリンクを抽出
+                    markdown_links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', full_response)
+                    # 抽出したマークダウンリンクをリンクボタンとして表示
+                    for title, url in markdown_links:
+                        st.link_button(title, url)
+                except BadRequestError as e:
+                    mf.show_fail_toast('不幸なことに、エラーが起きてしまいました。知識数が多すぎる可能性があります。サイドバー上で少し減らしつつ、「再読み込み」ボタンを押すといいかもしれません…')
         st.session_state.messages.append({'role': 'assistant', 'content': full_response}) # 応答をメッセージに追加
         st.session_state.messages_api.append({'role': 'assistant', 'content': full_response}) # 応答をメッセージに追加
-
+        if len(st.session_state.messages_api) > 5:
+            st.session_state.messages_api.pop(0)
 
 # -------------------------
 # 学習データ
@@ -231,7 +241,7 @@ elif page == pages[1]:
         else:
             fig = px.scatter(chart_data, x='x_embedded', y='y_embedded', color='type')
         # 散布図の設定を更新
-        fig.update_traces(marker=dict(size=3), hovertemplate='id: %{customdata[1]}<br>name: %{customdata[0]}<extra></extra>', customdata=chart_data[['name', 'id']].values.tolist())
+        fig.update_traces(marker=dict(size=2), hovertemplate='id: %{customdata[1]}<br>name: %{customdata[0]}<extra></extra>', customdata=chart_data[['name', 'id']].values.tolist())
         # 散布図を表示
         st.plotly_chart(fig)
         st.caption('''
@@ -273,7 +283,7 @@ elif page == pages[1]:
             if uploaded_file is not None:
                 if uploaded_file.type == 'text/csv':
                     df_uploaded = pd.read_csv(uploaded_file)
-                    df_uploaded['id'] = range(max_id + 1, max_id + 1 + len(df_uploaded))
+                    df_uploaded['id'] = range(int(max_id) + 1, int(max_id) + 1 + len(df_uploaded))
                     df_uploaded = mf.process_dataframe(df_uploaded, client)
                     mf.write_to_dynamodb(dynamodb, df_uploaded, user_table_name)
                 elif uploaded_file.type == 'application/pdf':
@@ -285,7 +295,9 @@ elif page == pages[1]:
             st.caption('''
             - この機能は使用できますが、まだ調整中です。
             - アップロードしたファイルが表示され続ける場合は、右のバツをクリックして消してください。その後の知識の追加が正常に行えません。
-            - この機能で知識を追加した後は、必ず「再読み込み」ボタンを押してください。
+            - この機能で知識を追加した後は、必ずサイドバーの「再読み込み」ボタンを押してください。
+            - 大規模なファイルをアップロードすると処理に時間がかかります。エラーが出ない限りは、気長に待ってみてください。
+            - 現在、サンプルとして飛騨市公式観光サイト「[飛騨の旅](https://www.hida-kankou.jp/)」の各種データを追加してあります。データをまとめたCSVファイルはここに置いてあります。これらのファイルから、知識削除後の再追加も可能です。
             ''')
         # 削除する知識の指定
         with st.expander('##### 🗑️ 削除', expanded=True):
@@ -313,7 +325,7 @@ elif page == pages[1]:
         with st.expander('##### 👌 追加した知識の確認', expanded=True):
             # user_dfが空でない場合のみ、追加済の知識を表示
             if not user_df.empty:
-                st.dataframe(user_df, hide_index=True, column_order=(partition_key_name, 'name', 'description'))
+                st.dataframe(user_df, hide_index=True, column_order=(partition_key_name, 'name', 'description', 'url'))
             else:
                 st.warning(no_user_knowledge_warning)
             st.caption('反映されない場合は、サイドバーの「再読み込み」ボタンを押してください。')
@@ -360,7 +372,7 @@ elif page == pages[2]:
     if st.button('生成'):
         if command.strip():
             with st.spinner('AIが文章を生成中です……'):
-                knowledge = mf.get_knowledge(client, command, df)
+                knowledge = mf.get_knowledge(client, command, st.session_state['answer_num'], df)
                 # プロンプトに追加情報を追加
                 prompt = f'''
                 「{command}」を{platform}で紹介する文章をjson形式で一つだけ提案してください。サンプリング温度は{str(temperature)}、言語は{language}でお願いします。最高の品質で返答してくださるとすごく嬉しいです。
