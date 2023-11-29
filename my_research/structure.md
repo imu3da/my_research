@@ -1,5 +1,5 @@
 ```mermaid
-flowchart TB;
+graph TB;
     style 2 fill:#f08a5d,stroke:#333,stroke-width:4px;
     style 3 fill:#f08a5d,stroke:#333,stroke-width:4px;
     style 5 fill:#b83b5e,stroke:#333,stroke-width:4px;
