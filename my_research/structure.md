@@ -1,5 +1,5 @@
 ```mermaid
-graph TB
+flowchart TB
     style 2 fill:#f08a5d,stroke:#333,stroke-width:4px
     style 3 fill:#f08a5d,stroke:#333,stroke-width:4px
     style 5 fill:#b83b5e,stroke:#333,stroke-width:4px
@@ -20,5 +20,5 @@ graph TB
     10 --> |知識の読み込み| 3
     3 --> |追加知識| 7
     7 --> |AIアドバイザー、処理した追加知識| 3
-    7 --> |処理した基本知識| 10;
+    7 --> |処理した基本知識| 10
 ```
