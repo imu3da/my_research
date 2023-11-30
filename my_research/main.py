@@ -96,7 +96,7 @@ st.sidebar.write('''
 # <span style='color: silver; '>説明</span>
 ## <span style='color: gray; '>💬 AIアドバイザー</span>
 AI観光アドバイザーと会話ができます。
-## <span style='color: gray; '>🧐 学習データの確認・変更</span>
+## <span style='color: gray; '>🧐 知識の確認・変更</span>
 AIに与えている知識のデータを確認または変更できます。
 ## <span style='color: gray; '>🤖 投稿文の自動生成</span>
 SNSやHPに掲載する文章を自動生成できます。
