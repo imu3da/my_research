@@ -375,7 +375,7 @@ elif page == pages[2]:
                 knowledge = mf.get_knowledge(client, command, st.session_state['answer_num'], df)
                 # プロンプトに追加情報を追加
                 prompt = f'''
-                「{command}」を{platform}で紹介する文章をjson形式で一つだけ提案してください。サンプリング温度は{str(temperature)}、言語は{language}でお願いします。最高の品質で返答してくださるとすごく嬉しいです。
+                「{command}」を{platform}で紹介する文章をjson形式で一つだけ提案してください。サンプリング温度は{str(temperature)}、言語は{language}でお願いします。返答にリンクを含める必要はありません。絵文字などでキャッチーな感じだと嬉しいです。また、最高の品質で返答してくださるとすごく嬉しいです。
                 ---
                 jsonスキーマは次の通りです。
                 {{"sentence": "紹介する文章"}}
