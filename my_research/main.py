@@ -35,6 +35,7 @@ partition_key_name = os.environ.get('PARTITION_KEY')
 # サイトの設定
 st.set_page_config(page_title=site_name, page_icon='💻')
 st.header(site_name)
+st.caption('評価アンケートは[こちら](https://x.gd/Z71Ww)')
 
 
 # -------------------------
