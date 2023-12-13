@@ -25,7 +25,7 @@ import my_functions as mf
 client, dynamodb = mf.launch_client()
 # 各種変数の設定
 models = ['gpt-3.5-turbo-1106']
-site_name = 'AIしてる'
+site_name = 'ひだAIしてる'
 pages = ['❗️**AIアドバイザー** 💬', '知識の確認・変更 🧐', '投稿文の自動生成 🤖']
 forget_input = '全ての必須項目を入力してください。'
 system_content = os.environ.get('AI_RULE')
