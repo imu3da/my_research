@@ -88,7 +88,7 @@ api_key_input = st.sidebar.text_input(
 )
 if api_key_input:
     client = OpenAI(api_key = api_key_input)
-answer_num = st.sidebar.slider('単位知識数', 1, 5, 3, help='これは一度にAIが利用する知識の数です。高いほど知識が豊かになりますが、別の知識と混ざり、応答内容が不正確になる可能性が上がります。')
+answer_num = st.sidebar.slider('単位知識数', 1, 20, 10, help='これは一度にAIが利用する知識の数です。高いほど知識が豊かになりますが、別の知識と混ざり、応答内容が不正確になる可能性が上がります。')
 st.session_state['answer_num'] = answer_num
 history_num = st.sidebar.slider('記憶クエリ数', 1, 10, 3, help='これはAIアドバイザーとの会話での、AIが空気を読む精度のようなものです。高いほど会話全体の流れを考慮しますが、発言1回あたりの重要性が下がり、クリティカルな返答が難しくなります。')
 st.session_state['history_num'] = history_num
