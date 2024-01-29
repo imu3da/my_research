@@ -76,7 +76,7 @@ if not user_df.empty:
 # サイドバー
 # -------------------------
 page = st.sidebar.radio('メニュー', pages)
-model = st.sidebar.selectbox('モデル', models, help = 'チャットと文章の自動生成に用いるAIのモデルを選択してください。(現在は1種類のみ選択できるようにしています。)')
+model = st.sidebar.selectbox('モデル', models, help = 'チャットと文章の自動生成に用いるAIのモデルを選択してください。')
 st.session_state['model'] = model
 if 'model' not in st.session_state:
     st.session_state['model'] = 'gpt-4-turbo-preview'
