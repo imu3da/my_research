@@ -24,7 +24,7 @@ import my_functions as mf
 # 各種クライアントを用意する
 client, dynamodb = mf.launch_client()
 # 各種変数の設定
-models = ['gpt-3.5-turbo-1106', 'gpt-4-turbo-preview']
+models = ['gpt-4-turbo-preview', 'gpt-3.5-turbo-1106']
 site_name = 'ひだAIしてるくん'
 pages = ['❗️**AIアドバイザー** 💬', '知識の確認・変更 🧐', '投稿文の自動生成 🤖']
 forget_input = '全ての必須項目を入力してください。'
@@ -79,7 +79,7 @@ page = st.sidebar.radio('メニュー', pages)
 model = st.sidebar.selectbox('モデル', models, help = 'チャットと文章の自動生成に用いるAIのモデルを選択してください。(現在は1種類のみ選択できるようにしています。)')
 st.session_state['model'] = model
 if 'model' not in st.session_state:
-    st.session_state['model'] = 'gpt-3.5-turbo-1106'
+    st.session_state['model'] = 'gpt-4-turbo-preview'
 api_key_input = st.sidebar.text_input(
     'OpenAI APIキー',
     type='password',
