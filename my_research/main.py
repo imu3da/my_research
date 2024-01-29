@@ -155,7 +155,7 @@ if page == pages[0]:
             knowledge = mf.get_knowledge(client, prompt, st.session_state['answer_num'], df)
         prompt_user = prompt
         prompt_api = prompt
-        prompt_api += '\n---\nなお以下は上記に関連しているかもしれない情報です。良ければ回答の参考にしてください。関連している場合は、リンクを回答に含めてくれると嬉しいです。\n' + knowledge
+        prompt_api += '\n---\nなお以下は上記に関連しているかもしれない情報です。良ければ回答の参考にしてください。関連している場合は、リンクを回答に含めてくれると嬉しいです。ただしリンクのラベルは抽出してボタンのラベルに利用するので、ボタンのラベルとして適したラベル付けだとありがたいです。\n' + knowledge
         # ユーザーへの表示用メッセージを更新
         st.session_state.messages.append({'role': 'user', 'content': prompt_user})
         # API用メッセージを更新
