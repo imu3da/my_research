@@ -33,9 +33,9 @@ table_name = os.environ.get('KNOWLEDGE_TABLE')
 user_table_name = os.environ.get('USER_KNOWLEDGE_TABLE')
 partition_key_name = os.environ.get('PARTITION_KEY')
 # サイトの設定
-st.set_page_config(page_title=site_name, page_icon='💻')
-st.header(site_name)
-st.caption('評価アンケートは[こちら](https://forms.gle/F6tacLGG5DJnGST96)')
+st.set_page_config(page_title=site_name)
+# st.header(site_name)
+# st.caption('評価アンケートは[こちら](https://forms.gle/F6tacLGG5DJnGST96)')
 
 
 # -------------------------
